@@ -32,7 +32,8 @@
         {
           "cameraPermission": "Ứng dụng cần truy cập Camera để quét mã vé check-in."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {

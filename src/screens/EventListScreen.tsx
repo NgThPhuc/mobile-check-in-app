@@ -1,23 +1,25 @@
 // src/screens/EventListScreen.tsx
-// Màn hình danh sách sự kiện - UI Premium
+// Màn hình danh sách sự kiện - UI Compact Dashboard (New Design)
 
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons'; // Đổi sang MaterialIcons cho giống mẫu
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Image,
-    Platform,
-    RefreshControl,
-    SafeAreaView, StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  Platform,
+  RefreshControl,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 import { Event, getEvents } from '../api/events.api';
@@ -25,12 +27,11 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAuthStore } from '../store/authStore';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width - 40;
 
 export default function EventListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const user = useAuthStore((state) => state.user);
-  
+
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,9 +61,9 @@ export default function EventListScreen() {
   };
 
   const handleSelectEvent = (event: Event) => {
-    navigation.navigate('MainTabs', { 
-      eventId: event.id, 
-      eventTitle: event.title 
+    navigation.navigate('MainTabs', {
+      eventId: event.id,
+      eventTitle: event.title
     });
   };
 
@@ -71,104 +72,79 @@ export default function EventListScreen() {
     return {
       day: date.getDate().toString().padStart(2, '0'),
       month: (date.getMonth() + 1).toString().padStart(2, '0'),
-      year: date.getFullYear(),
       time: date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      full: date.toLocaleDateString('vi-VN', { 
-        weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' 
-      })
+      dateShort: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
     };
   };
 
+  // Cập nhật màu sắc status theo chuẩn Tailwind của mẫu
   const getEventStatus = (event: Event) => {
     const now = new Date();
     const startDate = new Date(event.start_at);
     const endDate = event.end_at ? new Date(event.end_at) : null;
-    
+
     if (endDate && now > endDate) {
-      return { label: 'Đã kết thúc', color: '#8E8E93', bgColor: '#F2F2F7' };
+      return { label: 'Đã kết thúc', color: '#94A3B8', dotColor: '#94A3B8' }; // slate-400
     }
     if (now >= startDate && (!endDate || now <= endDate)) {
-      return { label: 'Đang diễn ra', color: '#34C759', bgColor: '#E8F8EE' };
+      return { label: 'Đang diễn ra', color: '#10B981', dotColor: '#10B981' }; // emerald-500
     }
-    return { label: 'Sắp diễn ra', color: '#007AFF', bgColor: '#E8F4FD' };
+    return { label: 'Sắp diễn ra', color: '#3B82F6', dotColor: '#3B82F6' }; // blue-500
   };
 
-  const renderItem = ({ item, index }: { item: Event; index: number }) => {
+  const renderItem = ({ item }: { item: Event }) => {
     const dateInfo = formatDate(item.start_at);
     const status = getEventStatus(item);
-    
+
     return (
-      <TouchableOpacity 
-        style={[styles.card, { marginTop: index === 0 ? 15 : 0 }]} 
+      <TouchableOpacity
+        style={styles.card}
         onPress={() => handleSelectEvent(item)}
-        activeOpacity={0.9}
+        activeOpacity={0.7}
       >
-        {/* Image with Overlay */}
+        {/* Left Image Section */}
         <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: item.cover_image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800' }} 
-            style={styles.cardImage} 
-            resizeMode="cover"
+          <Image
+            source={{ uri: item.cover_image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=200' }}
+            style={styles.cardImage}
           />
-          {/* Dark Gradient Overlay */}
-          <View style={styles.imageOverlay} />
-          
-          {/* Date Badge */}
+          {/* Floating Date Badge */}
           <View style={styles.dateBadge}>
             <Text style={styles.dateDay}>{dateInfo.day}</Text>
-            <Text style={styles.dateMonth}>Th{dateInfo.month}</Text>
-          </View>
-          
-          {/* Status Badge */}
-          <View style={[styles.statusBadge, { backgroundColor: status.bgColor }]}>
-            <View style={[styles.statusDot, { backgroundColor: status.color }]} />
-            <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
+            <Text style={styles.dateMonth}>T{dateInfo.month}</Text>
           </View>
         </View>
-        
-        {/* Content */}
-        <View style={styles.cardContent}>
-          <Text style={styles.eventTitle} numberOfLines={2}>{item.title}</Text>
-          
-          <View style={styles.infoContainer}>
-            <View style={styles.infoRow}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="time-outline" size={16} color="#007AFF" />
-              </View>
-              <Text style={styles.infoText}>
-                {dateInfo.time} - {dateInfo.full}
-              </Text>
-            </View>
-            
-            <View style={styles.infoRow}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="location-outline" size={16} color="#FF6B6B" />
-              </View>
-              <Text style={styles.infoText} numberOfLines={1}>{item.venue_name}</Text>
-            </View>
 
-            {item.organization?.name && (
-              <View style={styles.infoRow}>
-                <View style={styles.iconContainer}>
-                  <Ionicons name="business-outline" size={16} color="#9C27B0" />
-                </View>
-                <Text style={styles.infoText} numberOfLines={1}>{item.organization.name}</Text>
-              </View>
-            )}
+        {/* Center Info Section */}
+        <View style={styles.infoContainer}>
+          {/* Status Line */}
+          <View style={styles.statusRow}>
+            <View style={[styles.statusDot, { backgroundColor: status.dotColor }]} />
+            <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
           </View>
-          
-          {/* Action Button */}
-          <View style={styles.actionRow}>
-            <View style={styles.ticketInfo}>
-              <Ionicons name="ticket-outline" size={16} color="#666" />
-              <Text style={styles.ticketText}>
-                {item._count?.tickets ?? 0} vé
-              </Text>
+
+          {/* Title */}
+          <Text style={styles.eventTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+
+          {/* Meta Info */}
+          <View style={styles.metaContainer}>
+            <View style={styles.metaRow}>
+              <MaterialIcons name="schedule" size={14} color="#64748B" />
+              <Text style={styles.metaText}>{dateInfo.time} - {dateInfo.dateShort}</Text>
             </View>
-            <View style={styles.checkinButton}>
-              <Text style={styles.checkinButtonText}>Check-in</Text>
-              <Ionicons name="arrow-forward" size={16} color="#fff" />
+            <View style={styles.metaRow}>
+              <MaterialIcons name="place" size={14} color="#64748B" />
+              <Text style={styles.metaText} numberOfLines={1}>{item.venue_name}</Text>
             </View>
+          </View>
+        </View>
+
+        {/* Right Action Button */}
+        <View style={styles.actionContainer}>
+          <View style={styles.actionButton}>
+            <MaterialIcons name="qr-code-2" size={20} color="#3B82F6" />
           </View>
         </View>
       </TouchableOpacity>
@@ -176,82 +152,96 @@ export default function EventListScreen() {
   };
 
   const displayName = user?.full_name || 'Staff';
-  const avatarUrl = user?.avatar_url || 
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=007AFF&color=fff`;
+  // Lấy chữ cái đầu của tên để làm avatar text
+  const avatarLabel = displayName.charAt(0).toUpperCase() + (displayName.split(' ').pop()?.charAt(0).toUpperCase() || '');
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+
+      {/* Spacing for Status Bar */}
+      <View style={{ height: 10 }} />
+
       {/* HEADER */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
+        <View>
           <Text style={styles.greeting}>Xin chào,</Text>
-          <Text style={styles.username}>{displayName}</Text>
+          <Text style={styles.username}>
+            {displayName}
+            {'\n'}
+            <Text style={styles.organizationText}>
+               {/* Giả lập Organization nếu chưa có trong user store */}
+               Organization 01
+            </Text>
+          </Text>
         </View>
-        
+
         <TouchableOpacity 
-          style={styles.profileButton}
+          style={styles.profileButton} 
           onPress={() => navigation.navigate('Profile')}
         >
-          <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          {user?.avatar_url ? (
+             <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>{avatarLabel || 'ST'}</Text>
+            </View>
+          )}
           <View style={styles.notificationDot} />
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar (Optional UI Element) */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#8E8E93" />
-          <Text style={styles.searchPlaceholder}>Tìm kiếm sự kiện...</Text>
+      {/* SEARCH SECTION */}
+      <View style={styles.searchSection}>
+        <View style={styles.searchContainer}>
+          <MaterialIcons name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
+          <TextInput 
+            style={styles.searchInput}
+            placeholder="Tìm kiếm sự kiện..."
+            placeholderTextColor="#94A3B8"
+          />
         </View>
         <TouchableOpacity style={styles.filterButton}>
-          <Ionicons name="options-outline" size={22} color="#007AFF" />
+          <MaterialIcons name="tune" size={20} color="#475569" />
         </TouchableOpacity>
       </View>
 
-      {/* Section Title */}
+      {/* SECTION TITLE */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Sự kiện được phân công</Text>
-        <View style={styles.eventCount}>
-          <Text style={styles.eventCountText}>{events.length}</Text>
+        <View style={styles.sectionTitleWrapper}>
+          <Text style={styles.sectionTitle}>SỰ KIỆN</Text>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{events.length}</Text>
+          </View>
         </View>
+        <TouchableOpacity>
+          <Text style={styles.seeAllText}>Xem tất cả</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* LIST */}
+      {/* LIST CONTENT */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Đang tải sự kiện...</Text>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#3B82F6" />
         </View>
       ) : (
         <FlatList
           data={events}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={onRefresh} 
-              colors={['#007AFF']}
-              tintColor="#007AFF"
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#3B82F6']}
+              tintColor="#3B82F6"
             />
           }
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconContainer}>
-                <Ionicons name="calendar-outline" size={60} color="#C7C7CC" />
-              </View>
-              <Text style={styles.emptyTitle}>Chưa có sự kiện</Text>
-              <Text style={styles.emptyText}>
-                Bạn chưa được phân công vào sự kiện nào
-              </Text>
-              <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-                <Ionicons name="refresh" size={18} color="#007AFF" />
-                <Text style={styles.refreshButtonText}>Làm mới</Text>
-              </TouchableOpacity>
+            <View style={styles.centerContainer}>
+              <Text style={styles.emptyText}>Chưa có sự kiện nào</Text>
             </View>
           }
         />
@@ -261,312 +251,293 @@ export default function EventListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#F8F9FA',
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC', // background-light
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
-  
-  // Header
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+
+  // Header Styles
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20, 
-    paddingVertical: 15,
-    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
-  headerLeft: {},
-  greeting: { 
-    fontSize: 14, 
-    color: '#8E8E93',
+  greeting: {
+    fontSize: 12,
+    color: '#64748B', // slate-500
     fontWeight: '500',
+    marginBottom: 2,
   },
-  username: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    color: '#000',
-    marginTop: 2,
+  username: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A', // slate-900
+    lineHeight: 24,
+  },
+  organizationText: {
+    fontSize: 14,
+    color: '#3B82F6', // primary blue
+    fontWeight: '500',
   },
   profileButton: {
     position: 'relative',
   },
-  avatar: { 
-    width: 48, 
-    height: 48, 
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#E5E5EA',
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#3B82F6', // fallback gradient substitute
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  avatarText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
   notificationDot: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    top: -2,
+    right: -2,
     width: 12,
     height: 12,
+    backgroundColor: '#EF4444', // red-500
     borderRadius: 6,
-    backgroundColor: '#FF3B30',
     borderWidth: 2,
     borderColor: '#fff',
   },
-  
-  // Search
-  searchContainer: {
+
+  // Search Styles
+  searchSection: {
     flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+    marginBottom: 24,
+    gap: 8,
   },
-  searchBar: {
+  searchContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginRight: 12,
+    position: 'relative',
+    justifyContent: 'center',
   },
-  searchPlaceholder: {
-    marginLeft: 10,
-    color: '#8E8E93',
-    fontSize: 15,
+  searchIcon: {
+    position: 'absolute',
+    left: 12,
+    zIndex: 1,
+  },
+  searchInput: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E2E8F0', // slate-200
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingLeft: 40,
+    paddingRight: 16,
+    fontSize: 14,
+    color: '#0F172A',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
   filterButton: {
     width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#E8F4FD',
+    height: 44, // khớp chiều cao input
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  
-  // Section
+
+  // Section Title Styles
   sectionHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 5,
+    marginBottom: 16,
   },
-  sectionTitle: { 
-    fontSize: 18, 
-    fontWeight: '700', 
-    color: '#000',
-  },
-  eventCount: {
-    marginLeft: 10,
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  eventCountText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  
-  // List
-  list: { 
-    paddingHorizontal: 20, 
-    paddingBottom: 30,
-  },
-  
-  // Card
-  card: { 
-    backgroundColor: '#fff', 
-    borderRadius: 20, 
-    marginBottom: 20,
-    overflow: 'hidden',
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 12, 
-    elevation: 5,
-  },
-  imageContainer: {
-    position: 'relative',
-    height: 180,
-  },
-  cardImage: { 
-    height: '100%', 
-    width: '100%',
-  },
-  imageOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.15)',
-  },
-  dateBadge: {
-    position: 'absolute',
-    top: 15,
-    left: 15,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  dateDay: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    lineHeight: 24,
-  },
-  dateMonth: {
-    fontSize: 11,
-    color: '#666',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  statusBadge: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
+  sectionTitleWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    gap: 8,
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1E293B', // slate-800
+    letterSpacing: 0.5,
   },
-  statusText: {
+  countBadge: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)', // primary/10
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  countText: {
+    color: '#3B82F6',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  seeAllText: {
+    color: '#3B82F6',
     fontSize: 12,
     fontWeight: '600',
   },
+
+  // List Styles
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100, // Để tránh bị che bởi nav bar nếu có
+    gap: 12,
+  },
+
+  // Card Styles (Compact Row)
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.6)', // slate-200/60
+    gap: 12,
+    // Card Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   
-  // Card Content
-  cardContent: { 
-    padding: 18,
+  // Card - Image Section
+  imageContainer: {
+    position: 'relative',
+    flexShrink: 0,
   },
-  eventTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    marginBottom: 12, 
-    color: '#000',
-    lineHeight: 24,
+  cardImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: '#E2E8F0',
   },
-  infoContainer: {
-    marginBottom: 15,
-  },
-  infoRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 8,
-  },
-  iconContainer: {
-    width: 28,
-    height: 28,
+  dateBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 8,
-    backgroundColor: '#F8F9FA',
-    justifyContent: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     alignItems: 'center',
-    marginRight: 10,
+    minWidth: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
-  infoText: { 
-    color: '#666', 
-    fontSize: 14,
+  dateDay: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#3B82F6',
+    lineHeight: 14,
+  },
+  dateMonth: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+
+  // Card - Info Section
+  infoContainer: {
     flex: 1,
+    minWidth: 0, // quan trọng để text truncate hoạt động
   },
-  
-  // Action Row
-  actionRow: {
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#F2F2F7',
+    gap: 6,
+    marginBottom: 4,
   },
-  ticketInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  ticketText: {
-    marginLeft: 6,
-    color: '#666',
+  statusText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  eventTitle: {
     fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 6,
+    lineHeight: 20,
   },
-  checkinButton: {
+  metaContainer: {
+    gap: 2,
+  },
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 25,
     gap: 6,
   },
-  checkinButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
+  metaText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#64748B',
+    flex: 1,
   },
-  
-  // Loading
-  loadingContainer: {
+
+  // Card - Action Section
+  actionContainer: {
+    flexShrink: 0,
+  },
+  actionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Utilities
+  centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 40,
   },
-  loadingText: {
-    marginTop: 15,
-    color: '#666',
-    fontSize: 15,
-  },
-  
-  // Empty
-  emptyContainer: { 
-    alignItems: 'center', 
-    paddingTop: 80,
-    paddingHorizontal: 40,
-  },
-  emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#F2F2F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
-  },
-  emptyText: { 
-    color: '#8E8E93', 
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#E8F4FD',
-    borderRadius: 25,
-    gap: 8,
-  },
-  refreshButtonText: {
-    color: '#007AFF',
-    fontWeight: '600',
-    fontSize: 15,
+  emptyText: {
+    color: '#94A3B8',
+    fontSize: 14,
   },
 });

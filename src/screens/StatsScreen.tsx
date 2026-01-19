@@ -115,14 +115,14 @@ export default function StatsScreen() {
                   <Ionicons name="time" size={14} color="#FF9500" />
                   <Text style={styles.subStatText}>{notCheckedIn} chưa vào</Text>
                 </View>
-                <View style={styles.subStatItem}>
+                {/* <View style={styles.subStatItem}>
                   <Ionicons name="ban" size={14} color="#FF3B30" />
                   <Text style={styles.subStatText}>{revokedCount} thu hồi</Text>
                 </View>
                 <View style={styles.subStatItem}>
                   <Ionicons name="card" size={14} color="#AF52DE" />
                   <Text style={styles.subStatText}>{refundedCount} hoàn tiền</Text>
-                </View>
+                </View> */}
               </View>
             </View>
 
