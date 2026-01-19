@@ -6,20 +6,20 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  FlatList,
-  Image,
-  Platform,
-  RefreshControl,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    FlatList,
+    Image,
+    Platform,
+    RefreshControl,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 import { Event, getEvents } from '../api/events.api';
@@ -41,7 +41,23 @@ export default function EventListScreen() {
       if (!refreshing) setLoading(true);
       const data = await getEvents();
       const eventList = Array.isArray(data) ? data : data.data || [];
-      setEvents(eventList);
+      
+      const now = new Date();
+      
+      // Filter: bỏ sự kiện đã kết thúc
+      const activeEvents = eventList.filter((event: Event) => {
+        const endDate = event.end_at ? new Date(event.end_at) : null;
+        // Nếu có end_at và đã qua -> bỏ
+        if (endDate && now > endDate) return false;
+        return true;
+      });
+      
+      // Sort: sắp xếp theo thời gian bắt đầu (gần nhất trước)
+      const sortedEvents = activeEvents.sort((a: Event, b: Event) => {
+        return new Date(a.start_at).getTime() - new Date(b.start_at).getTime();
+      });
+      
+      setEvents(sortedEvents);
     } catch (error) {
       console.log('Lỗi tải events:', error);
       Alert.alert('Lỗi', 'Không thể tải danh sách sự kiện');
@@ -201,9 +217,9 @@ export default function EventListScreen() {
             placeholderTextColor="#94A3B8"
           />
         </View>
-        <TouchableOpacity style={styles.filterButton}>
+        {/* <TouchableOpacity style={styles.filterButton}>
           <MaterialIcons name="tune" size={20} color="#475569" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* SECTION TITLE */}
@@ -214,9 +230,9 @@ export default function EventListScreen() {
             <Text style={styles.countText}>{events.length}</Text>
           </View>
         </View>
-        <TouchableOpacity>
+        {/* <TouchableOpacity>
           <Text style={styles.seeAllText}>Xem tất cả</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* LIST CONTENT */}
