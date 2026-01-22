@@ -83,16 +83,17 @@ export default function CheckinScreen() {
       const resData = response.data;
 
       setApiResult({
-        success: resData.success,
+        success: resData.valid,           // Dùng valid từ API
         message: resData.message,
-        resultCode: resData.result,
+        resultCode: resData.valid ? 'SUCCESS' : resData.reason,  // Dùng reason khi thất bại
         ticketInfo: resData.ticket,
       });
 
-      if (resData.success) {
+      if (resData.valid) {
         await checkinSuccessFeedback();
-        fetchStats();
-      } else if (resData.result === 'ALREADY_USED') {
+        // Delay nhẹ để đảm bảo backend đã cập nhật xong
+        setTimeout(() => fetchStats(), 500);
+      } else if (resData.reason === 'ALREADY_USED') {
         await alreadyUsedFeedback();
       } else {
         await checkinErrorFeedback();
@@ -111,6 +112,7 @@ export default function CheckinScreen() {
   };
 
   const getResultStyle = () => {
+    // Kiểm tra resultCode: SUCCESS = xanh, ALREADY_USED = vàng, khác = đỏ
     if (apiResult?.resultCode === 'SUCCESS') return { bg: '#10B981', icon: 'checkmark-circle' };
     if (apiResult?.resultCode === 'ALREADY_USED') return { bg: '#F59E0B', icon: 'alert-circle' };
     return { bg: '#EF4444', icon: 'close-circle' };
@@ -235,7 +237,7 @@ export default function CheckinScreen() {
           <SafeAreaView style={styles.resultContent}>
             <Ionicons name={getResultStyle().icon as any} size={80} color="#fff" />
             <Text style={styles.resultTitle}>
-              {apiResult.success ? 'THÀNH CÔNG' : (apiResult.resultCode === 'ALREADY_USED' ? 'ĐÃ QUÉT' : 'THẤT BẠI')}
+              {apiResult.resultCode === 'SUCCESS' ? 'THÀNH CÔNG' : (apiResult.resultCode === 'ALREADY_USED' ? 'ĐÃ QUÉT' : 'THẤT BẠI')}
             </Text>
             <Text style={styles.resultMessage}>{apiResult.message}</Text>
             
